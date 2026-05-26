@@ -1,0 +1,158 @@
+version: '3.8'
+
+services:
+  # PostgreSQL + TimescaleDB for metrics storage
+  postgres:
+    image: postgres:15-alpine
+    container_name: iicpc-postgres
+    environment:
+      POSTGRES_DB: iicpc_metrics
+      POSTGRES_USER: iicpc_user
+      POSTGRES_PASSWORD: iicpc_password_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U iicpc_user -d iicpc_metrics"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iicpc-network
+
+  # Submission Handler: Accept & containerize submissions
+  submission-handler:
+    build:
+      context: ./submission-handler
+      dockerfile: Dockerfile
+    container_name: iicpc-submission-handler
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+      POSTGRES_URL: postgres://iicpc_user:iicpc_password_dev@postgres:5432/iicpc_metrics
+      DOCKER_HOST: unix:///var/run/docker.sock
+      ENV: development
+    volumes:
+      # Allow containerized submissions to spawn new containers
+      - /var/run/docker.sock:/var/run/docker.sock
+      - submission_uploads:/tmp/submissions
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iicpc-network
+
+  # Bot Fleet: Generate massive load
+  bot-fleet:
+    build:
+      context: ./bot-fleet
+      dockerfile: Dockerfile
+    container_name: iicpc-bot-fleet
+    ports:
+      - "8081:8081"
+    environment:
+      TARGET_URL: http://submission-handler:8080
+      TELEMETRY_URL: http://telemetry-ingester:8082
+      NUM_BOTS: "100"  # Start with 100 for local testing, scale to 5000 in production
+      ORDERS_PER_SECOND: "1000"  # Target TPS
+      ENV: development
+    depends_on:
+      submission-handler:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iicpc-network
+
+  # Telemetry Ingester: Collect & validate metrics
+  telemetry-ingester:
+    build:
+      context: ./telemetry-ingester
+      dockerfile: Dockerfile
+    container_name: iicpc-telemetry-ingester
+    ports:
+      - "8082:8082"
+    environment:
+      PORT: "8082"
+      POSTGRES_URL: postgres://iicpc_user:iicpc_password_dev@postgres:5432/iicpc_metrics
+      ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iicpc-network
+
+  # WebSocket Server: Real-time metrics to frontend
+  ws-server:
+    build:
+      context: ./telemetry-ingester
+      dockerfile: Dockerfile.ws
+    container_name: iicpc-ws-server
+    ports:
+      - "8083:8083"
+    environment:
+      PORT: "8083"
+      POSTGRES_URL: postgres://iicpc_user:iicpc_password_dev@postgres:5432/iicpc_metrics
+      ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - iicpc-network
+
+  # Leaderboard Frontend: React UI
+  leaderboard:
+    build:
+      context: ./leaderboard
+      dockerfile: Dockerfile
+    container_name: iicpc-leaderboard
+    ports:
+      - "3000:3000"
+    environment:
+      REACT_APP_WS_URL: ws://localhost:8083
+      REACT_APP_SUBMISSION_URL: http://localhost:8080
+      ENV: development
+    depends_on:
+      - ws-server
+    networks:
+      - iicpc-network
+
+  # PgAdmin: Database management UI (optional, for debugging)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: iicpc-pgadmin
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@iicpc.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    depends_on:
+      - postgres
+    networks:
+      - iicpc-network
+    profiles:
+      - debug
+
+volumes:
+  postgres_data:
+  submission_uploads:
+
+networks:
+  iicpc-network:
+    driver: bridge

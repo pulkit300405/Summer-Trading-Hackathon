@@ -1,0 +1,361 @@
+════════════════════════════════════════════════════════════════════════════
+  IICPC SUMMER HACKATHON 2026: QUICK START CHECKLIST
+  Distributed Benchmarking & Hosting Platform
+════════════════════════════════════════════════════════════════════════════
+
+🚀 IMMEDIATE ACTIONS (TODAY)
+────────────────────────────────────────────────────────────────────────────
+
+1. CREATE GITHUB REPOSITORY
+   [ ] Create repo: https://github.com/new
+   [ ] Name: iicpc-summer-hackathon-2026
+   [ ] Description: Distributed Benchmarking Platform for Trading Infrastructure
+   [ ] Make PUBLIC (judges need to see it)
+   [ ] Initialize with this project structure
+
+2. CLONE & SETUP LOCALLY
+   [ ] git clone <your-repo-url>
+   [ ] cd iicpc-summer-hackathon-2026
+   [ ] Review ARCHITECTURE.md (key design doc)
+   [ ] Read SETUP.md for development
+
+3. VERIFY DOCKER & ENVIRONMENT
+   [ ] docker --version (should be 20.10+)
+   [ ] docker-compose --version (should be 2.0+)
+   [ ] Have ~10GB disk space available
+
+════════════════════════════════════════════════════════════════════════════
+🏗️  WEEK 1: FOUNDATION (May 9-15)
+════════════════════════════════════════════════════════════════════════════
+
+GOAL: Get platform running with all services connected (even if basic)
+
+PERSON 1 (IIT Delhi Quant):
+  [ ] Review ARCHITECTURE.md + DECISIONS.md
+  [ ] Design order matching algorithm (FIFO, price-time priority)
+  [ ] Design correctness validation rules
+  [ ] Create spec for bot order generation (Limit, Market, Cancel)
+  [ ] Create test cases for order validation
+
+PERSON 2 (Docker/Infra):
+  [ ] Get docker-compose.yml running locally
+  [ ] Verify all 6 services start: postgres, submission-handler, bot-fleet,
+      telemetry-ingester, ws-server, leaderboard
+  [ ] Test database schema initialization
+  [ ] Ensure health checks work (/health endpoints)
+  [ ] Document any setup issues in SETUP.md
+
+YOU (Quant + Security):
+  [ ] Implement bot order generation (randomized Limit/Market/Cancel)
+  [ ] Implement bot connection pooling & order sending
+  [ ] Add latency measurement (timestamp at send → timestamp at ack)
+  [ ] Implement metric recording to telemetry service
+  [ ] Start with 100 concurrent bots (test 1 submission)
+
+DELIVERABLE:
+  - All services healthy (docker-compose ps shows all running)
+  - Submit 1 test order → bot receives it → latency measured
+  - git push code to main branch (commit frequently!)
+
+────────────────────────────────────────────────────────────────────────────
+
+════════════════════════════════════════════════════════════════════════════
+📊 WEEK 2: SCALE & METRICS (May 16-22)
+════════════════════════════════════════════════════════════════════════════
+
+GOAL: 5K concurrent bots, accurate metrics, basic leaderboard
+
+PERSON 1 (IIT Delhi Quant):
+  [ ] Implement correctness validator (FIFO order priority checks)
+  [ ] Validate fills (no double-fills, proper price matching)
+  [ ] Calculate correctness rate (percentage of valid fills)
+  [ ] Define composite score formula: (correctness × TPS) / sqrt(p99)
+  [ ] Create test suite for validation
+
+PERSON 2 (Docker/Infra):
+  [ ] Scale bot fleet: 5000 concurrent bots
+  [ ] Implement batch metrics insertion (1000 metrics/batch)
+  [ ] Implement leaderboard metrics aggregation (run every 5 seconds)
+  [ ] Add connection pooling to reduce DB strain
+  [ ] Optimize docker-compose for multi-service coordination
+  [ ] Test end-to-end: upload code → spawn bots → collect metrics
+
+YOU (Quant + Security):
+  [ ] Scale bot fleet from 100 → 5000 goroutines
+  [ ] Implement realistic order generation (70% limit, 20% market, 10% cancel)
+  [ ] Add order book tracking per bot (for cancellations)
+  [ ] Implement latency percentile calculation (p50/p90/p99)
+  [ ] Add throughput calculation (orders per second)
+  [ ] Monitor for goroutine leaks, memory issues
+
+DELIVERABLE:
+  - 5K concurrent bots sending orders
+  - Accurate latency metrics (p50/p90/p99)
+  - Throughput calculated (TPS)
+  - Correctness rate calculated
+  - Leaderboard showing scores for submissions
+  - git push with working 5K bot scale test
+
+────────────────────────────────────────────────────────────────────────────
+
+════════════════════════════════════════════════════════════════════════════
+🎨 WEEK 3: POLISH & IaC (May 23-29)
+════════════════════════════════════════════════════════════════════════════
+
+GOAL: Production-ready IaC, beautiful UI, optimization
+
+PERSON 1 (IIT Delhi Quant):
+  [ ] Finalize correctness validation logic
+  [ ] Optimize order matching algorithm (performance)
+  [ ] Create comprehensive test cases
+  [ ] Document edge cases (partial fills, cancellations, etc.)
+  [ ] Review entire ARCHITECTURE.md for accuracy
+
+PERSON 2 (Docker/Infra):
+  [ ] Create Kubernetes manifests (infrastructure/k8s/)
+  [ ] Create Terraform configs (optional, infrastructure/terraform/)
+  [ ] Write deployment documentation
+  [ ] Test multi-node scaling (if needed)
+  [ ] Optimize resource limits (CPU pinning, memory)
+  [ ] Add monitoring/alerting (basic health checks)
+
+YOU (Quant + Security):
+  [ ] Optimize bot connection pooling
+  [ ] Implement circuit breaker for failed submissions
+  [ ] Add security validation (input sanitization)
+  [ ] Optimize telemetry pipeline (batch sizes, flush intervals)
+  [ ] Implement graceful shutdown (drain connections)
+  [ ] Performance profiling (pprof for Go)
+  [ ] Stress test entire platform (5K bots for 10 minutes)
+
+LEADERBOARD PERSON (if available):
+  [ ] Beautiful React UI with metrics visualization
+  [ ] Real-time WebSocket updates
+  [ ] Responsive design (mobile-friendly)
+  [ ] Charts for latency/throughput trends
+  [ ] Rank badges and color-coding
+
+DELIVERABLE:
+  - Kubernetes manifests (k8s/deployment.yaml, service.yaml, etc.)
+  - IaC documentation (how to deploy to cloud)
+  - Beautiful leaderboard UI
+  - Stress test results (5K bots for 10+ minutes, no crashes)
+  - git push with production-ready code
+
+────────────────────────────────────────────────────────────────────────────
+
+════════════════════════════════════════════════════════════════════════════
+🎬 WEEK 4: TESTING & SUBMISSION (May 30 - June 10)
+════════════════════════════════════════════════════════════════════════════
+
+GOAL: Perfect submission, comprehensive documentation
+
+EVERYONE:
+  [ ] **CRITICAL: Write ARCHITECTURE.md (judges read this!)**
+    - System overview diagram
+    - Component descriptions
+    - Design decisions explained
+    - Data flow explanation
+    - Scaling strategy
+
+  [ ] **Create SETUP.md (ensure judges can run it)**
+    - Prerequisites
+    - `docker-compose up` one-liner
+    - How to upload test submission
+    - How to view leaderboard
+    - Troubleshooting section
+
+  [ ] **Test submission checklist:**
+    - [ ] `docker-compose down` (clean state)
+    - [ ] `docker-compose up` (everything starts)
+    - [ ] `curl http://localhost:8080/health` (submission handler ok)
+    - [ ] `curl http://localhost:8081/health` (bot fleet ok)
+    - [ ] `curl http://localhost:8082/health` (telemetry ok)
+    - [ ] Open http://localhost:3000 (leaderboard loads)
+    - [ ] Upload test submission (succeeds)
+    - [ ] Bots start sending orders (visible in logs)
+    - [ ] Leaderboard updates (new entry appears)
+    - [ ] Metrics are accurate (latencies make sense)
+
+  [ ] **Documentation review:**
+    - [ ] README.md is clear and inviting
+    - [ ] ARCHITECTURE.md explains all 4 components
+    - [ ] SETUP.md has step-by-step instructions
+    - [ ] docs/DECISIONS.md explains tech choices
+    - [ ] Code is well-commented
+    - [ ] README mentions team members
+
+  [ ] **Final code cleanup:**
+    - [ ] No debug logs (or only at DEBUG level)
+    - [ ] No TODO comments left hanging
+    - [ ] Consistent code style (go fmt, eslint)
+    - [ ] All services have /health endpoints
+    - [ ] All services have proper error handling
+
+  [ ] **Create demo script:**
+    - Write shell script that:
+      1. Starts docker-compose
+      2. Waits for services
+      3. Uploads test submission
+      4. Runs 5K bots for 30 seconds
+      5. Shows leaderboard results
+      6. Calculates scores
+    - Make it runnable: `./demo.sh`
+
+FINAL PUSH (June 8-9):
+  [ ] Make sure GitHub repo is public
+  [ ] Create GitHub release (tag: v1.0.0)
+  [ ] Write release notes (features, tech stack, how to run)
+  [ ] Fill out submission form when it opens (June 9)
+  [ ] Double-check all links work
+  [ ] Verify docker-compose builds from scratch
+
+════════════════════════════════════════════════════════════════════════════
+📋 SUBMISSION CHECKLIST (June 9)
+════════════════════════════════════════════════════════════════════════════
+
+When the submission form opens:
+
+[ ] GitHub URL: https://github.com/username/iicpc-summer-hackathon-2026
+[ ] README is comprehensive and clear
+[ ] ARCHITECTURE.md explains system design (this is critical!)
+[ ] SETUP.md allows judges to run everything with `docker-compose up`
+[ ] All services have health checks
+[ ] Kubernetes manifests included (infrastructure/k8s/)
+[ ] Code is well-commented and clean
+[ ] No secrets in repository (.env files in .gitignore)
+[ ] Demo script included and works
+[ ] Release notes published on GitHub
+[ ] Tested on fresh laptop (or VM) - no special setup required
+
+════════════════════════════════════════════════════════════════════════════
+🎯 SUCCESS CRITERIA (What Judges Evaluate)
+════════════════════════════════════════════════════════════════════════════
+
+1. ARCHITECTURE (40%)
+   ✅ Clean microservices design
+   ✅ Explanation of tech choices
+   ✅ Resilience & error handling
+   ✅ Scalability approach
+
+2. CORRECTNESS (30%)
+   ✅ Accurate latency measurements (p50/p90/p99)
+   ✅ Valid order matching (FIFO, price-time priority)
+   ✅ No lost orders or double-fills
+   ✅ Correct throughput calculation
+
+3. SCALE (20%)
+   ✅ Handles 5000+ concurrent bots
+   ✅ Accurate metrics at scale
+   ✅ Real-time leaderboard performance
+   ✅ No crashes or memory leaks
+
+4. DOCUMENTATION & IaC (10%)
+   ✅ Clear ARCHITECTURE.md
+   ✅ Working SETUP.md
+   ✅ Kubernetes or Terraform manifests
+   ✅ Easy to understand design decisions
+
+════════════════════════════════════════════════════════════════════════════
+🔧 COMMON ISSUES & FIXES
+════════════════════════════════════════════════════════════════════════════
+
+Port conflicts:
+  $ lsof -i :8080  # Check what's using port 8080
+  $ kill -9 <PID>  # Kill it
+
+Database won't initialize:
+  $ docker-compose logs postgres
+  $ docker-compose exec postgres psql -U iicpc_user -d iicpc_metrics
+  $ \dt  # List tables (should see metrics, submissions, etc.)
+
+Services won't start:
+  $ docker-compose down -v  # Remove everything
+  $ docker-compose up       # Start fresh
+
+Memory issues:
+  $ docker stats  # Watch memory usage
+  Check bot goroutine count (should be ~5000)
+  Reduce NUM_BOTS env variable if needed
+
+Leaderboard not updating:
+  $ docker-compose logs ws-server
+  Check browser console (F12) for JavaScript errors
+  Verify WebSocket connection to http://localhost:8083
+
+════════════════════════════════════════════════════════════════════════════
+📞 TEAM COMMUNICATION
+════════════════════════════════════════════════════════════════════════════
+
+DAILY:
+  - 5-10 min standup: What did you finish? What's next? Any blockers?
+  - Git commits (at least 1 per person per day)
+  - Push code to main branch (or dev branch, merge daily)
+
+WEEKLY:
+  - Review ARCHITECTURE.md (update with new learnings)
+  - Load test the platform (5K bots for 1 hour, check stability)
+  - Review metrics accuracy (validate p99 calculations, etc.)
+
+DOCUMENTATION:
+  - Update README as you build features
+  - Add comments to complex logic (ESPECIALLY correctness validation)
+  - Keep docs/DECISIONS.md current
+
+════════════════════════════════════════════════════════════════════════════
+🏆 WINNING STRATEGY
+════════════════════════════════════════════════════════════════════════════
+
+1. CORRECTNESS FIRST
+   - Judges value accurate metrics over scale
+   - Perfect p99 latency measurement > broken 100K TPS
+
+2. DOCUMENTATION SECOND
+   - ARCHITECTURE.md is read before code
+   - Clear diagrams > confusing prose
+   - Explain WHY you chose Go/PostgreSQL/etc.
+
+3. SCALE THIRD
+   - 5K bots is impressive and achievable
+   - 100K bots (if you have time) is bonus points
+
+4. RESILIENCE
+   - Crashes are unforgivable
+   - Edge cases (network timeouts, malicious code) must be handled
+   - Graceful degradation is good engineering
+
+5. CLEAN CODE
+   - Professional code > hacked-together code
+   - Error messages should be helpful
+   - Logs should be clear (not spammy)
+
+════════════════════════════════════════════════════════════════════════════
+💡 KEY REMINDERS
+════════════════════════════════════════════════════════════════════════════
+
+✓ GO is statically compiled → single binary, easy to deploy
+✓ DOCKER COMPOSE is for dev → Kubernetes is for scale
+✓ GOROUTINES are lightweight → 5K bots = tiny memory footprint
+✓ POSTGRESQL + TIMESCALEDB → built for time-series, percentile queries work
+✓ ARCHITECTURE.md is your best friend → judges read it carefully
+✓ COMMIT OFTEN → shows you're making progress, helps debug
+✓ TEST EARLY → catch issues in week 1, not week 4
+✓ DOCUMENT AS YOU BUILD → don't leave it for the end
+✓ STRESS TEST → 5K bots for 30+ minutes, ensure stability
+✓ BACKUP YOUR WORK → git push to GitHub constantly
+
+════════════════════════════════════════════════════════════════════════════
+🚀 LET'S SHIP IT!
+════════════════════════════════════════════════════════════════════════════
+
+Timeline: May 9 - June 10, 2026
+Deadline: June 9 (submission form opens)
+Goal: Production-ready Distributed Benchmarking Platform
+
+You've got a solid team, clean architecture, and 4 weeks.
+Make every commit count. Push to GitHub constantly.
+
+Questions? Check SETUP.md or ARCHITECTURE.md.
+Questions about decisions? Check docs/DECISIONS.md.
+
+Good luck! 🏆
