@@ -1,96 +1,118 @@
-# IICPC Summer Hackathon 2026: Distributed Benchmarking & Hosting Platform
+# IICPC Summer Hackathon 2026: Distributed Benchmarking Platform
 
-A high-performance distributed platform for benchmarking contestant-submitted trading infrastructure under extreme load.
+A high-performance distributed platform for benchmarking contestant-submitted trading infrastructure under extreme load. Tests order matching engines with 5K+ concurrent bots, measures latency (p50/p90/p99), throughput, and correctness.
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
-# Clone repo
-git clone https://github.com/your-username/iicpc-summer-hackathon-2026
-cd iicpc-summer-hackathon-2026
+git clone https://github.com/pulkit300405/Summer-Trading-Hackathon
+cd Summer-Trading-Hackathon
 
-# Spin up entire platform locally
 docker-compose up
 
-# Platform ready at:
-# - Submission Handler: http://localhost:8080
+# Services ready at:
+# - Submission: http://localhost:8080
 # - Leaderboard: http://localhost:3000
 # - Metrics: PostgreSQL on :5432
 ```
 
-## 📊 System Architecture
+## Problem
+
+Trading hackathons need fair benchmarking. Contestants submit orderbook engines in any language (C++, Rust, Go). We need to:
+- Accept submissions safely (containerize them)
+- Generate realistic load (5K+ concurrent bots)
+- Measure latency accurately (p50/p90/p99)
+- Validate correctness (FIFO, no double-fills)
+- Show results in real-time
+
+## Solution
+
+Microservices architecture:
+- **Submission Handler** accepts code, containerizes it, runs it in isolation
+- **Bot Fleet** (Go + goroutines) generates 5K+ concurrent connections
+- **Telemetry Ingester** captures latency, throughput, validates correctness
+- **Leaderboard UI** shows real-time metrics
+- **PostgreSQL + TimescaleDB** stores time-series metrics
+
+## System Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                   CONTESTANT SUBMISSION                      │
-│            (C++/Rust/Go orderbook/matching engine)           │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-         ┌───────────▼───────────┐
-         │ SUBMISSION HANDLER    │
-         │ (containerize code)   │
-         └───────────┬───────────┘
-                     │
-    ┌────────────────┼────────────────┐
-    │                │                │
-┌───▼──────┐   ┌────▼─────┐   ┌──────▼──┐
-│ BOT FLEET│   │TELEMETRY │   │LEADERBD │
-│(5K bots) │   │ INGESTER │   │(React)  │
-└───┬──────┘   └────┬─────┘   └────▲────┘
-    │               │              │
-    └───────────────┼──────────────┘
-                    │
-          ┌─────────▼──────────┐
-          │   PostgreSQL +     │
-          │   TimescaleDB      │
-          │   (metrics store)  │
-          └────────────────────┘
+Contestant Code (C++/Rust/Go)
+    ↓
+Submission Handler (containerize)
+    ↓
+┌─────────────────────────────┐
+│ Bot Fleet (5K bots)         │
+│ Telemetry Ingester          │
+│ Leaderboard (React)         │
+└─────────────────────────────┘
+    ↓
+PostgreSQL + TimescaleDB
 ```
 
-**Key Metrics**:
-- Latency: p50, p90, p99 (milliseconds)
-- Throughput: TPS (transactions per second)
-- Correctness: Price-time priority, fill accuracy
+## Features
 
-## 📁 Project Structure
+**Load Generation**
+- 5K+ concurrent bots using Go goroutines
+- Realistic order patterns (limit orders, cancellations, fills)
+- Multiple protocol support (FIX, REST, WebSocket)
+
+**Benchmarking**
+- Latency: p50, p90, p99 milliseconds
+- Throughput: Orders per second
+- Correctness: FIFO validation, fill accuracy, no double-fills
+
+**Isolation & Security**
+- Each submission runs in isolated Docker container
+- CPU/memory limits enforced
+- Network isolation by default
+- No data leakage between submissions
+
+**Real-time Monitoring**
+- Live leaderboard (WebSocket updates)
+- Metrics dashboard (latency curves, throughput)
+- Per-submission metrics tracking
+
+## Tech Stack
+
+| Component | Tech | Why |
+|-----------|------|-----|
+| Load Generator | Go + Goroutines | 5K+ concurrent connections, minimal memory |
+| Submission Handler | Go + HTTP | Fast containerization, single binary |
+| Metrics | PostgreSQL + TimescaleDB | Time-series optimized, easy scaling |
+| Frontend | React + WebSocket | Real-time UI, modern stack |
+| Orchestration | Docker Compose + Kubernetes | Local dev easy, production-ready |
+
+## Project Structure
 
 ```
-iicpc-summer-hackathon-2026/
-├── README.md                          # This file
-├── ARCHITECTURE.md                    # Detailed system design (for judges)
-├── SETUP.md                           # Development setup guide
-├── docker-compose.yml                 # Local development environment
-├── docker-compose.prod.yml            # Production configuration
+Summer-Trading-Hackathon/
+├── bot-fleet/              # Load generator (5K concurrent bots)
+│   ├── main.go
+│   ├── bot/
+│   │   ├── ordergen.go     # Realistic order generation
+│   │   ├── sender.go       # Send to submission container
+│   │   └── states.go       # Bot state machine
+│   └── Dockerfile
 │
-├── submission-handler/                # Service: Accept & containerize submissions
+├── submission-handler/     # Accept & containerize submissions
 │   ├── main.go
 │   ├── handlers/
 │   │   ├── upload.go
 │   │   └── status.go
 │   ├── sandbox/
 │   │   └── containerizer.go
-│   ├── Dockerfile
-│   └── go.mod
+│   └── Dockerfile
 │
-├── bot-fleet/                         # Service: Generate massive load
-│   ├── main.go
-│   ├── bot/
-│   │   ├── ordergen.go                # Generate realistic orders
-│   │   ├── sender.go                  # Send orders (FIX/REST/WebSocket)
-│   │   └── states.go                  # Bot state machine
-│   ├── Dockerfile
-│   └── go.mod
-│
-├── telemetry-ingester/                # Service: Collect & validate metrics
+├── telemetry-ingester/     # Collect & validate metrics
 │   ├── main.go
 │   ├── metrics/
-│   │   ├── collector.go               # Low-latency metrics collection
-│   │   ├── validator.go               # Correctness validation (FIFO, fills)
-│   │   └── aggregator.go              # p50/p90/p99 calculation
-│   ├── Dockerfile
-│   └── go.mod
+│   │   ├── collector.go
+│   │   ├── validator.go    # Correctness checks
+│   │   └── aggregator.go   # p50/p90/p99
+│   └── Dockerfile
 │
-├── leaderboard/                       # Service: Real-time UI
+├── leaderboard/            # Real-time UI
 │   ├── src/
 │   │   ├── App.jsx
 │   │   ├── components/
@@ -98,157 +120,92 @@ iicpc-summer-hackathon-2026/
 │   │   │   └── MetricsGraph.jsx
 │   │   └── hooks/
 │   │       └── useWebSocket.js
-│   ├── package.json
-│   ├── Dockerfile
-│   └── .dockerignore
+│   └── Dockerfile
 │
-├── infrastructure/                    # Deployment & IaC
-│   ├── kubernetes/
-│   │   ├── deployment.yaml
-│   │   ├── service.yaml
-│   │   └── pvc.yaml
-│   └── terraform/
-│       ├── main.tf
-│       ├── variables.tf
-│       └── outputs.tf
+├── docker-compose.yml      # Local dev (all 4 services)
+├── docker-compose.prod.yml # Production config
 │
-└── docs/
-    ├── DECISIONS.md                   # Tech stack rationale
-    ├── API_SPEC.md                    # API endpoints (submission, bots, metrics)
-    └── TROUBLESHOOTING.md
+├── ARCHITECTURE.md         # Detailed design (for judges)
+├── SETUP.md               # Dev setup guide
+└── README.md              # This file
 ```
 
-## 🛠 Tech Stack
+## Development Roadmap
 
-| Component | Technology | Rationale |
-|-----------|-----------|-----------|
-| Load Generator | Go + Goroutines | 5K+ concurrent connections, minimal memory |
-| Submission Handler | Go + HTTP | Fast, single binary, easy containerization |
-| Telemetry | Go + PostgreSQL | Low-latency metrics, time-series queries |
-| Frontend | React + WebSocket | Real-time leaderboard, modern UI |
-| Storage | PostgreSQL + TimescaleDB | Time-series optimized, easy scaling |
-| Orchestration | Docker Compose (dev) + Kubernetes (prod) | Simple local dev, production-ready |
+**Week 1: Core**
+- Submission handler accepts uploads & containerizes
+- Bot fleet spawns 100 concurrent bots
+- Telemetry captures latency data
+- Basic PostgreSQL storage
 
-## 📈 Development Roadmap
+**Week 2: Scale & Validation**
+- Scale to 5K concurrent bots
+- Correctness validation (FIFO, fills)
+- Calculate p50/p90/p99 latencies
+- Leaderboard UI (basic)
 
-### Week 1: Core Components
-- [ ] Submission handler accepts uploads & creates containers
-- [ ] Bot fleet spawns 100 concurrent bots
-- [ ] Telemetry ingester captures latency data
-- [ ] Basic metrics storage (PostgreSQL)
+**Week 3: Polish**
+- Optimize latency (connection pooling)
+- Kubernetes manifests
+- Error handling
+- Production docker-compose
 
-### Week 2: Scale & Correctness
-- [ ] Scale bot fleet to 5K concurrent bots
-- [ ] Implement correctness validation (FIFO, fill accuracy)
-- [ ] Calculate p50/p90/p99 latencies
-- [ ] Leaderboard UI (basic version)
+**Week 4: Testing & Docs**
+- Stress test platform itself
+- Detailed ARCHITECTURE.md
+- Demo script
+- Final cleanup
 
-### Week 3: Polish & IaC
-- [ ] Optimize latency (connection pooling, batching)
-- [ ] Write Kubernetes manifests
-- [ ] Comprehensive error handling
-- [ ] Production docker-compose
+## Setup (Local Development)
 
-### Week 4: Testing & Documentation
-- [ ] Stress test the platform itself
-- [ ] Write ARCHITECTURE.md (judges read this)
-- [ ] Demo script
-- [ ] Final cleanup
+**Prerequisites**: Docker & Docker Compose, Go 1.21+, Node.js 18+
 
-## 🚦 Getting Started (Local Development)
-
-### Prerequisites
-- Docker & Docker Compose
-- Go 1.21+ (for local development)
-- Node.js 18+ (for leaderboard)
-- PostgreSQL client tools (optional, for debugging)
-
-### Setup
 ```bash
-# 1. Clone
-git clone <your-repo>
-cd iicpc-summer-hackathon-2026
+git clone https://github.com/pulkit300405/Summer-Trading-Hackathon
+cd Summer-Trading-Hackathon
 
-# 2. Start all services
 docker-compose up
 
-# 3. Verify services are running
-curl http://localhost:8080/health          # Submission handler
-curl http://localhost:8081/health          # Bot fleet
-curl http://localhost:8082/health          # Telemetry ingester
-open http://localhost:3000                 # Leaderboard
+# Verify services
+curl http://localhost:8080/health      # Submission
+curl http://localhost:8081/health      # Bot fleet
+curl http://localhost:8082/health      # Telemetry
+open http://localhost:3000             # Leaderboard
 
-# 4. Upload a test submission
+# Submit test code
 curl -X POST http://localhost:8080/submit \
   -H "Content-Type: application/json" \
   -d '{"language":"go", "code":"..."}'
 ```
 
-## 🎯 Key Metrics (What Judges Evaluate)
+## Key Metrics (Judges Evaluate)
 
-1. **Architecture Quality** (40%)
-   - Clean microservices design
-   - Clear separation of concerns
-   - Resilience & error handling
+1. **Architecture** (40%) — Clean microservices, separation of concerns, resilience
+2. **Correctness** (30%) — Valid order matching, accurate latency, no data loss
+3. **Scale** (20%) — Handles 5K+ bots, real-time performance
+4. **Documentation & IaC** (10%) — Clear design, Kubernetes/Terraform configs
 
-2. **Correctness** (30%)
-   - Valid order matching (FIFO, price-time priority)
-   - Accurate latency measurements
-   - No double-fills or lost orders
-
-3. **Scale** (20%)
-   - Handles 5K+ concurrent bots
-   - Measures throughput accurately
-   - Real-time leaderboard performance
-
-4. **Documentation & IaC** (10%)
-   - Clear ARCHITECTURE.md
-   - Kubernetes manifests or Terraform
-   - Easy to understand design decisions
-
-## 📚 Documentation
-
-- **[ARCHITECTURE.md](./ARCHITECTURE.md)** — Detailed system design (start here if you're new)
-- **[SETUP.md](./SETUP.md)** — Step-by-step development setup
-- **[docs/DECISIONS.md](./docs/DECISIONS.md)** — Why we chose Go, Docker, PostgreSQL, etc.
-- **[docs/API_SPEC.md](./docs/API_SPEC.md)** — API endpoints and contracts
-
-## 👥 Team Roles
-
-- **IIT Delhi Quant** → Architecture lead, order matching logic, correctness validation
-- **Docker/Infra Person** → Submission handler, bot fleet orchestration, Kubernetes
-- **You (Quant + Security)** → Bot concurrency, telemetry validation, system testing
-
-## 🔒 Security Notes
+## Security
 
 - Submissions run in isolated Docker containers
-- CPU/memory limits enforced per submission
-- Network isolation (each submission on unique port)
-- No network access from submission containers (by default)
+- CPU/memory limits per submission
+- Network isolation by default
+- No inter-submission data access
 
-## 📝 Submission Checklist (June 9th)
+## Documentation
 
-- [ ] GitHub repo public
-- [ ] `docker-compose up` works (all 4 services start)
-- [ ] Can upload submission, spin up container, run bots
-- [ ] Leaderboard shows real-time metrics
-- [ ] ARCHITECTURE.md explains design decisions
-- [ ] Kubernetes manifests or Terraform configs included
-- [ ] README has clear setup instructions
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** — Detailed system design
+- **[SETUP.md](./SETUP.md)** — Development setup guide
+- **[docs/API_SPEC.md](./docs/API_SPEC.md)** — API endpoints
 
-## 🎓 Learning Resources
+## Author
 
-- **Go Concurrency**: https://go.dev/blog/pipelines
-- **TimescaleDB**: https://docs.timescale.com/
-- **Docker Best Practices**: https://docs.docker.com/develop/dev-best-practices/
-- **Kubernetes**: https://kubernetes.io/docs/concepts/overview/
+**Pulkit Singh** — Full-stack architecture, bot fleet (concurrency), telemetry validation, Kubernetes setup.
 
-## 📞 Questions?
+GitHub: [@pulkit300405](https://github.com/pulkit300405)
 
-Check [TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md) or reach out to the team.
+## Timeline
 
----
-
-**Hackathon Timeline**: May 9 - June 10, 2026  
-**Submission Deadline**: June 9, 2026 (submission form opens final week)  
-**Status**: 🚀 In Development
+Hackathon: May 9 - June 10, 2026  
+Submission Deadline: June 9, 2026  
+Status: In Development
