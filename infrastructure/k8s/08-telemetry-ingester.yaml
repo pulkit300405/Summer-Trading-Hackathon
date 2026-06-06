@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telemetry-ingester
+  namespace: iicpc
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: telemetry-ingester
+  template:
+    metadata:
+      labels:
+        app: telemetry-ingester
+    spec:
+      containers:
+      - name: telemetry-ingester
+        image: pulkit300405/summer-trading-hackathon-telemetry-ingester:latest
+        ports:
+        - containerPort: 8082
+        env:
+        - name: PORT
+          value: "8082"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8082
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "500m"
+          limits:
+            memory: "512Mi"
+            cpu: "1000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: telemetry-ingester
+  namespace: iicpc
+spec:
+  type: ClusterIP
+  selector:
+    app: telemetry-ingester
+  ports:
+  - port: 8082
+    targetPort: 8082

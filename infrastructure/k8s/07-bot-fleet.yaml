@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bot-fleet
+  namespace: iicpc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bot-fleet
+  template:
+    metadata:
+      labels:
+        app: bot-fleet
+    spec:
+      containers:
+      - name: bot-fleet
+        image: pulkit300405/summer-trading-hackathon-bot-fleet:latest
+        ports:
+        - containerPort: 8081
+        env:
+        - name: TARGET_URL
+          value: "http://submission-handler:8080"
+        - name: TELEMETRY_URL
+          value: "http://telemetry-ingester:8082"
+        - name: NUM_BOTS
+          value: "5000"
+        - name: ORDERS_PER_SECOND
+          value: "50000"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "1000m"
+          limits:
+            memory: "1Gi"
+            cpu: "2000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bot-fleet
+  namespace: iicpc
+spec:
+  type: ClusterIP
+  selector:
+    app: bot-fleet
+  ports:
+  - port: 8081
+    targetPort: 8081

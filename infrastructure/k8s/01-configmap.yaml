@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: iicpc-config
+  namespace: iicpc
+data:
+  ENVIRONMENT: production
+  DATABASE_HOST: postgres
+  DATABASE_PORT: "5432"
+  DATABASE_NAME: iicpc_metrics
+  DATABASE_USER: iicpc_user
+  TARGET_URL: http://submission-handler:8080
+  TELEMETRY_URL: http://telemetry-ingester:8082
+  NUM_BOTS: "5000"
+  ORDERS_PER_SECOND: "50000"
+  LOG_LEVEL: info

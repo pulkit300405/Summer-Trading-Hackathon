@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: leaderboard
+  namespace: iicpc
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: leaderboard
+  template:
+    metadata:
+      labels:
+        app: leaderboard
+    spec:
+      containers:
+      - name: leaderboard
+        image: pulkit300405/summer-trading-hackathon-leaderboard:latest
+        ports:
+        - containerPort: 3000
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "250m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: leaderboard
+  namespace: iicpc
+spec:
+  type: LoadBalancer
+  selector:
+    app: leaderboard
+  ports:
+  - port: 3000
+    targetPort: 3000
