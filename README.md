@@ -264,15 +264,13 @@ curl -X POST http://localhost:8080/submit \
 
 ## Author
 
-# Author
-
 ## Pulkit Singh
 
 Full-stack architecture, bot fleet engineering (Go concurrency), telemetry validation, distributed load generation, and system testing.
 
 ## Mannat Thukral
 
-Backend systems engineering, Docker containerization, Kubernetes orchestration, infrastructure setup, microservices coordination, deployment architecture, and platform workflow design.
+Backend systems engineering, AI product strategy, system architecture planning, frontend coordination, documentation, research and platform workflow design
 
 GitHub:
 
