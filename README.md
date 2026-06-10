@@ -264,9 +264,21 @@ curl -X POST http://localhost:8080/submit \
 
 ## Author
 
-**Pulkit Singh** — Full-stack architecture, bot fleet (goroutine concurrency), telemetry validation, Kubernetes setup, system testing.
+# Author
 
-GitHub: [@pulkit300405](https://github.com/pulkit300405)
+## Pulkit Singh
+
+Full-stack architecture, bot fleet engineering (Go concurrency), telemetry validation, distributed load generation, and system testing.
+
+## Mannat Thukral
+
+Backend systems engineering, Docker containerization, Kubernetes orchestration, infrastructure setup, microservices coordination, deployment architecture, and platform workflow design.
+
+GitHub:
+
+* @pulkit300405
+* @DebugDyanmo
+
 
 ## Timeline
 
