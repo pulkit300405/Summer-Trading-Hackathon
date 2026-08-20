@@ -589,3 +589,12 @@ Leaderboard:
 4. Build Telemetry Ingester (week 2)
 5. Build Leaderboard (week 2-3)
 6. Stress test & polish (week 3-4)
+
+
+## Security & Isolation
+
+- Input validation (language, code size, malicious patterns)
+- Docker isolation with CPU/memory limits
+- FIFO price-time priority validation
+- No double-fill detection
+- Composite Score = (Correctness% × TPS) / sqrt(p99_Latency_ms)

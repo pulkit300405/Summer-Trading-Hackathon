@@ -1,0 +1,99 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: timescale/timescaledb:latest-pg15
+    container_name: iicpc-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: iicpc_user
+      POSTGRES_PASSWORD: iicpc_password_dev
+      POSTGRES_DB: iicpc_metrics
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U iicpc_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iicpc-network
+
+  submission-handler:
+    build:
+      context: ./submission-handler
+      dockerfile: Dockerfile
+    container_name: iicpc-submission-handler
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+      POSTGRES_URL: postgres://iicpc_user:iicpc_password_dev@postgres:5432/iicpc_metrics
+      ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - iicpc-network
+
+  bot-fleet:
+    build:
+      context: ./bot-fleet
+      dockerfile: Dockerfile
+    container_name: iicpc-bot-fleet
+    ports:
+      - "8081:8081"
+    environment:
+      TARGET_URL: http://submission-handler:8080
+      TELEMETRY_URL: http://telemetry-ingester:8082
+      NUM_BOTS: "100"
+      ORDERS_PER_SECOND: "1000"
+      ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - iicpc-network
+
+  telemetry-ingester:
+    build:
+      context: ./telemetry-ingester
+      dockerfile: Dockerfile
+    container_name: iicpc-telemetry-ingester
+    ports:
+      - "8082:8082"
+    environment:
+      PORT: "8082"
+      POSTGRES_URL: postgres://iicpc_user:iicpc_password_dev@postgres:5432/iicpc_metrics
+      ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - iicpc-network
+
+  leaderboard:
+    build:
+      context: ./leaderboard
+      dockerfile: Dockerfile
+    container_name: iicpc-leaderboard
+    ports:
+      - "3000:3000"
+    environment:
+      REACT_APP_SUBMISSION_URL: http://localhost:8080
+      REACT_APP_TELEMETRY_URL: http://localhost:8082
+      ENV: development
+    depends_on:
+      - submission-handler
+    networks:
+      - iicpc-network
+
+volumes:
+  postgres_data:
+  submission_uploads:
+
+networks:
+  iicpc-network:
+    driver: bridge
