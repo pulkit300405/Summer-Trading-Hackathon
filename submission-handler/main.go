@@ -79,6 +79,7 @@ func main() {
 }
 
 func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(HealthResponse{
 		Status:    "healthy",
@@ -169,6 +170,7 @@ func (s *Server) submitHandler(w http.ResponseWriter, r *http.Request) {
 		)
 	}
 
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(SubmissionResponse{
@@ -194,6 +196,7 @@ func (s *Server) statusHandler(w http.ResponseWriter, r *http.Request) {
 		status = strings.TrimSpace(string(out))
 	}
 
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"submission_id": submissionID,
@@ -202,6 +205,7 @@ func (s *Server) statusHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"service": "IICPC Submission Handler",

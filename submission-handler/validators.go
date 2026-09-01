@@ -60,16 +60,3 @@ func detectMaliciousCode(code string) error {
 	return nil
 }
 
-// ValidateMetricEvent checks incoming metric events
-func ValidateMetricEvent(event *MetricEvent) error {
-	if event.SubmissionID == "" {
-		return fmt.Errorf("submission_id is required")
-	}
-	if event.LatencyMs < 0 {
-		return fmt.Errorf("latency_ms must be non-negative")
-	}
-	if event.Timestamp <= 0 {
-		return fmt.Errorf("timestamp must be positive")
-	}
-	return nil
-}

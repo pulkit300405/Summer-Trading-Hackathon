@@ -325,6 +325,7 @@ func (f *BotFleet) healthHandler(w http.ResponseWriter, r *http.Request) {
 	runningBots := len(f.bots)
 	f.mu.RUnlock()
 
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"status":      "healthy",
@@ -342,6 +343,7 @@ func (f *BotFleet) statsHandler(w http.ResponseWriter, r *http.Request) {
 	sent := f.sentOrders.Load()
 	active := f.activeOrders.Load()
 
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"total_bots":    botCount,
